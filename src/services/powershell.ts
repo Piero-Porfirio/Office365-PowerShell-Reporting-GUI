@@ -1,26 +1,38 @@
+
 /**
- * Represents the result of a PowerShell command execution.
+ * Represents the result of a generic PowerShell command execution.
+ * NOTE: In the current setup, specific services (Azure/Office365) are used,
+ * but this generic interface remains for potential future use or abstraction.
  */
 export interface PowerShellResult {
   /**
-   * The output of the PowerShell command.
+   * The string output of the PowerShell command, expected to be JSON for parsing.
    */
   output: string;
   /**
-   * Any error messages generated during the command execution.
+   * Any error messages generated during the command execution or API call.
    */
   error?: string;
 }
 
 /**
- * Executes a PowerShell command via the API endpoint.
+ * Executes a generic PowerShell command via a hypothetical API endpoint.
+ * WARNING: This function is currently **NOT USED** as specific endpoints
+ * (/api/azure, /api/office365) handle the simulated requests.
+ * Executing arbitrary commands is a security risk.
  *
  * @param command The PowerShell command to execute.
  * @returns A promise that resolves to a PowerShellResult object.
+ * @deprecated Use executeAzurePowerShellCommand or executeOffice365PowerShellCommand instead.
  */
 export async function executePowerShellCommand(command: string): Promise<PowerShellResult> {
-  try {
-    const response = await fetch('/api/powershell', {
+   console.warn("Attempted to call deprecated executePowerShellCommand. Use specific service functions.");
+   // Returning an error state as this endpoint is removed/unused.
+   return Promise.resolve({ output: '', error: 'Generic PowerShell endpoint is deprecated/removed.' });
+
+  /* // Original implementation (if the endpoint existed):
+   try {
+    const response = await fetch('/api/powershell', { // This route is deleted
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -40,4 +52,5 @@ export async function executePowerShellCommand(command: string): Promise<PowerSh
     const errorMessage = error instanceof Error ? error.message : 'An unknown network error occurred';
     return { output: '', error: `API call failed: ${errorMessage}` };
   }
+  */
 }

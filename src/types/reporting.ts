@@ -1,4 +1,5 @@
 
+
 /**
  * Defines the categories of reports available in the reporting section.
  * These should match the labels/identifiers used in the sidebar and display logic.
@@ -88,7 +89,7 @@ export type ReportCategory =
   | "Private Teams"
   | "Teams Membership"
   | "Private & Shared Channels"
-  | "Login Activities" // Teams Login Activities
+  | "Login Activities" // Teams Login Activities (potentially same as Azure AD)
   | "Private Channels"
   | "Team Setting Changes"
   | "Inactive Users" // Teams Inactive Users
@@ -127,6 +128,33 @@ export interface SharedMailboxTrafficStats {
   externalMailsSent: number | null;
   externalMailsReceived: number | null;
 }
+
+/**
+ * Represents the structure for License Utilization data from `Get-MgSubscribedSku`.
+ */
+export interface LicenseUtilizationData {
+  SkuId: string;
+  SkuPartNumber: string;
+  ConsumedUnits: number;
+  TotalUnits: number; // Combined from PrepaidUnits sub-properties
+}
+
+/**
+ * Represents combined information for Azure AD Users and Groups.
+ * Needs refinement based on how the PowerShell command combines/returns data.
+ */
+export interface AzureADUserGroupInfo {
+  type: 'User' | 'Group'; // To distinguish between users and groups in a combined list
+  id: string;
+  displayName: string;
+  // User specific
+  userPrincipalName?: string;
+  license?: string | string[]; // Might be an array or specific license string
+  // Group specific
+  description?: string | null;
+  groupType?: string | string[];
+}
+
 
 // --- Report Category Grouping ---
 // Optional: Define groups for easier sidebar management if needed elsewhere
@@ -180,11 +208,16 @@ export const ReportGroups = {
   ],
 };
 
-// Add interfaces for other report data structures here
+// Add interfaces for other report data structures here as commands are implemented
 // e.g.,
-// export interface AzureADUser { ... }
-// export interface SecurityScore { ... }
-// export interface TeamMembership { ... }
+// export interface AzureADGroupMember { ... }
+// export interface MfaStatusReport { ... }
+// export interface TeamsActivityLog { ... }
 
-// You might also want a generic type or union type if fetching logic is centralized
-// export type ReportData = SharedMailboxTrafficStats | AzureADUser | SecurityScore | ...;
+// Generic type or union type for fetched data if needed for advanced components
+// export type ReportData =
+//    SharedMailboxTrafficStats |
+//    LicenseUtilizationData |
+//    AzureADUserGroupInfo |
+//    // ... other report types
+//    null;
