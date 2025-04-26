@@ -188,6 +188,9 @@ export function ReportDisplay({ selectedReport }: ReportDisplayProps) {
     if (!config) {
       console.error(`No configuration found for report: ${report}`);
       setError(`Configuration missing for report: ${report}.`);
+      setIsLoading(false); // Ensure loading stops if config is missing
+      setReportData(null);
+      setReportCommand(null);
       return;
     }
 
@@ -196,30 +199,39 @@ export function ReportDisplay({ selectedReport }: ReportDisplayProps) {
     setReportData(null);
     setReportCommand(config.command); // Store the command being executed
 
+    // Introduce a small delay for simulation to show loading state
+    await new Promise(resolve => setTimeout(resolve, 300));
+
     try {
+       // Handle "Not Implemented" case first
+       if (config.command === "# Not Implemented") {
+          setError(`Report not implemented: ${report}`);
+          setReportData([]); // Ensure empty data
+          setIsLoading(false);
+          return; // Stop further execution for this report
+       }
+
        // Use simulated data if available in config for stubbed backend behavior
        // Otherwise, call the actual service (which hits the stubbed API)
       let resultOutput: string | null = null;
-      // Introduce a small delay for simulation to show loading state
-      await new Promise(resolve => setTimeout(resolve, 300));
 
       if (config.simulatedData) {
           console.log(`Using simulated data for: ${report}`);
           resultOutput = JSON.stringify(config.simulatedData); // Simulate JSON string output
-      } else if (config.command !== "# Not Implemented") {
+      } else {
           console.log(`Executing command for ${report}: ${config.command}`);
           const result = await config.service(config.command);
           if (result.error) {
               // If the API returns a simulation error, treat it as an error
               if (result.error.includes('simulation not implemented')) {
-                  throw new Error(`Report simulation not implemented: ${report}`);
+                  setError(`Report simulation not implemented: ${report}`); // Set error instead of throwing
+                  setReportData([]);
+                  setIsLoading(false);
+                  return;
               }
-              throw new Error(result.error);
+              throw new Error(result.error); // Throw other errors
           }
           resultOutput = result.output; // Output from API is expected to be JSON string
-      } else {
-           // Handle "Not Implemented" case directly
-           throw new Error(`Report not implemented: ${report}`);
       }
 
 
@@ -235,6 +247,7 @@ export function ReportDisplay({ selectedReport }: ReportDisplayProps) {
     } catch (err) {
       console.error(`Error fetching data for ${report}:`, err);
       const message = err instanceof Error ? err.message : 'An unknown error occurred';
+      // Set error state instead of letting the error bubble up unhandled
       setError(`Failed to load data for ${report}. Error: ${message}`);
       setReportData([]); // Ensure data is empty on error
     } finally {
@@ -271,7 +284,7 @@ export function ReportDisplay({ selectedReport }: ReportDisplayProps) {
     }
 
     if (error) {
-      // Special handling for "Not Implemented" errors
+      // Special handling for "Not Implemented" errors based on the error message set in fetchReportData
       if (error.startsWith('Report not implemented') || error.startsWith('Report simulation not implemented')) {
         return (
           <Alert className="mt-4">
@@ -289,7 +302,7 @@ export function ReportDisplay({ selectedReport }: ReportDisplayProps) {
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Error Loading Report</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
-           {reportCommand && (
+           {reportCommand && reportCommand !== "# Not Implemented" && ( // Show command only if it's not the placeholder
              <code className="mt-2 text-xs p-1 bg-destructive/20 rounded block max-w-full overflow-x-auto">
                Command: {reportCommand}
              </code>
@@ -309,6 +322,9 @@ export function ReportDisplay({ selectedReport }: ReportDisplayProps) {
     }
 
      const config = reportConfig[selectedReport];
+     // Check config again in case selectedReport changed during async operation
+     if (!config) return null;
+
      const ReportComponent = config.component;
 
 
