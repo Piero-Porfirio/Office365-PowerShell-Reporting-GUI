@@ -1,3 +1,4 @@
+
 /**
  * Represents the result of an Azure PowerShell command execution.
  */
@@ -19,6 +20,7 @@ export interface AzurePowerShellResult {
  * @returns A promise that resolves to a AzurePowerShellResult object.
  */
 export async function executeAzurePowerShellCommand(command: string): Promise<AzurePowerShellResult> {
+  console.log(`Executing Azure command via API: ${command}`); // Log the command
   try {
     const response = await fetch('/api/azure', {
       method: 'POST',
@@ -30,10 +32,13 @@ export async function executeAzurePowerShellCommand(command: string): Promise<Az
 
     if (!response.ok) {
        const errorData = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
+       console.error(`Azure API HTTP Error ${response.status}:`, errorData?.error || 'Unknown error'); // Log HTTP error details
        throw new Error(errorData?.error || `HTTP error! status: ${response.status}`);
     }
 
     const result: AzurePowerShellResult = await response.json();
+    // Optionally log the received result for debugging
+    // console.log('Azure API Result:', result);
     return result;
   } catch (error) {
      console.error('Error calling Azure API:', error);
@@ -41,3 +46,5 @@ export async function executeAzurePowerShellCommand(command: string): Promise<Az
      return { output: '', error: `API call failed: ${errorMessage}` };
   }
 }
+
+    
