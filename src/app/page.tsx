@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -15,14 +16,16 @@ import { Container, Database, FileText, TerminalSquare } from 'lucide-react';
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center p-4 md:p-8 lg:p-12">
-      <div className="w-full max-w-4xl">
-        <h1 className="text-3xl font-bold mb-6 text-center text-primary">
+    // Use flex-col and h-screen to make the layout fill the viewport height
+    <main className="flex h-screen flex-col items-center p-4 md:p-8 lg:p-12 bg-background">
+       <div className="w-full max-w-6xl flex flex-col flex-grow"> {/* Use max-w-6xl and flex-grow */}
+        <h1 className="text-3xl font-bold mb-6 text-center text-primary shrink-0"> {/* Make header shrink */}
           <TerminalSquare className="inline-block mr-2 h-8 w-8 align-text-bottom" />
           PowerShell GUI
         </h1>
-        <Tabs defaultValue="azure" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-4">
+        {/* Make Tabs component grow to fill space */}
+        <Tabs defaultValue="reporting" className="w-full flex flex-col flex-grow">
+           <TabsList className="grid w-full grid-cols-4 mb-4 shrink-0"> {/* Make TabsList shrink */}
             <TabsTrigger value="azure">
               <Database className="mr-2 h-4 w-4" /> Azure
             </TabsTrigger>
@@ -36,7 +39,8 @@ export default function Home() {
               <FileText className="mr-2 h-4 w-4" /> Reporting
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="azure">
+          {/* Command Executor Tabs */}
+          <TabsContent value="azure" className="flex-grow overflow-auto">
             <CommandExecutor
               title="Azure PowerShell"
               commandType="Azure"
@@ -44,7 +48,7 @@ export default function Home() {
               placeholder="Enter Azure PowerShell command (e.g., Get-AzVM)"
             />
           </TabsContent>
-          <TabsContent value="office365">
+          <TabsContent value="office365" className="flex-grow overflow-auto">
             <CommandExecutor
               title="Office 365 PowerShell"
               commandType="Office365"
@@ -52,7 +56,7 @@ export default function Home() {
               placeholder="Enter Office 365 PowerShell command (e.g., Get-Mailbox)"
             />
           </TabsContent>
-          <TabsContent value="powershell">
+           <TabsContent value="powershell" className="flex-grow overflow-auto">
             <CommandExecutor
               title="General PowerShell"
               commandType="PowerShell"
@@ -60,9 +64,13 @@ export default function Home() {
               placeholder="Enter general PowerShell command (e.g., Get-Process)"
             />
           </TabsContent>
-          <TabsContent value="reporting">
-            <Reporting />
-          </TabsContent>
+           {/* Reporting Tab - Make it take remaining height and allow internal scrolling */}
+           <TabsContent
+             value="reporting"
+             className="flex flex-col flex-grow overflow-hidden" // Use overflow-hidden here
+           >
+             <Reporting /> {/* Reporting component now handles its own layout */}
+           </TabsContent>
         </Tabs>
       </div>
     </main>
