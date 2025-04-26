@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -52,12 +53,13 @@ const ChartContainer = React.forwardRef<
         data-chart={chartId}
         ref={ref}
         className={cn(
-          "flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-none [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-sector]:outline-none [&_.recharts-surface]:outline-none",
+          "flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line]:stroke-border/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-none [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-sector]:outline-none [&_.recharts-surface]:outline-none",
           className
         )}
         {...props}
       >
-        <ChartStyle id={chartId} config={config} />
+        {/* Removed automatic ChartStyle insertion here. It should be added manually inside the specific chart component if needed. */}
+        {/* <ChartStyle id={chartId} config={config} /> */}
         <RechartsPrimitive.ResponsiveContainer>
           {children}
         </RechartsPrimitive.ResponsiveContainer>
@@ -99,6 +101,8 @@ ${colorConfig
     />
   )
 }
+ChartStyle.displayName = "ChartStyle" // Added display name for consistency
+
 
 const ChartTooltip = RechartsPrimitive.Tooltip
 
@@ -188,11 +192,12 @@ const ChartTooltipContent = React.forwardRef<
           {payload.map((item, index) => {
             const key = `${nameKey || item.name || item.dataKey || "value"}`
             const itemConfig = getPayloadConfigFromPayload(config, item, key)
-            const indicatorColor = color || item.payload.fill || item.color
+            const indicatorColor = color || item.payload.fill || item.color || `var(--color-${key})` // Fallback to CSS variable
+
 
             return (
               <div
-                key={item.dataKey}
+                key={item.dataKey || item.name || index} // Use a more reliable key
                 className={cn(
                   "flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5 [&>svg]:text-muted-foreground",
                   indicator === "dot" && "items-center"
@@ -238,7 +243,8 @@ const ChartTooltipContent = React.forwardRef<
                           {itemConfig?.label || item.name}
                         </span>
                       </div>
-                      {item.value && (
+                      {/* Ensure value exists before formatting */}
+                      {item.value !== undefined && item.value !== null && (
                         <span className="font-mono font-medium tabular-nums text-foreground">
                           {item.value.toLocaleString()}
                         </span>
@@ -286,8 +292,11 @@ const ChartLegendContent = React.forwardRef<
         )}
       >
         {payload.map((item) => {
-          const key = `${nameKey || item.dataKey || "value"}`
-          const itemConfig = getPayloadConfigFromPayload(config, item, key)
+           // Use nameKey first if provided, otherwise fallback to dataKey or value
+           const key = `${nameKey ? item.payload?.[nameKey] : item.dataKey || item.value || "value"}`
+           const itemConfig = getPayloadConfigFromPayload(config, item, key)
+           const color = item.payload?.fill || item.color || itemConfig?.color || `var(--color-${key})` // More robust color fetching
+
 
           return (
             <div
@@ -302,11 +311,12 @@ const ChartLegendContent = React.forwardRef<
                 <div
                   className="h-2 w-2 shrink-0 rounded-[2px]"
                   style={{
-                    backgroundColor: item.color,
+                    backgroundColor: color, // Use fetched color
                   }}
                 />
               )}
-              {itemConfig?.label}
+               {/* Display label from config or fallback to item value */}
+              {itemConfig?.label || item.value}
             </div>
           )
         })}
@@ -335,24 +345,33 @@ function getPayloadConfigFromPayload(
 
   let configLabelKey: string = key
 
-  if (
-    key in payload &&
-    typeof payload[key as keyof typeof payload] === "string"
-  ) {
-    configLabelKey = payload[key as keyof typeof payload] as string
-  } else if (
-    payloadPayload &&
-    key in payloadPayload &&
-    typeof payloadPayload[key as keyof typeof payloadPayload] === "string"
-  ) {
-    configLabelKey = payloadPayload[
-      key as keyof typeof payloadPayload
-    ] as string
-  }
+   // Check payload itself for the key directly
+   if (key in payload && typeof payload[key as keyof typeof payload] === 'string') {
+     configLabelKey = payload[key as keyof typeof payload] as string;
+   }
+   // Check the nested payload object
+   else if (payloadPayload && key in payloadPayload && typeof payloadPayload[key as keyof typeof payloadPayload] === 'string') {
+     configLabelKey = payloadPayload[key as keyof typeof payloadPayload] as string;
+   }
+   // Check if the original key (e.g., 'totalMailsReceived') exists in config
+   else if (key in config) {
+     return config[key];
+   }
+    // Check if the potentially updated configLabelKey (e.g., 'Finance') exists in config
+   else if (configLabelKey in config) {
+       return config[configLabelKey];
+   }
+   // Fallback: if key is 'value' and payload has 'name', try config[payload.name]
+   // This helps in Pie charts where nameKey is used.
+   else if (key === 'value' && 'name' in payload && typeof payload.name === 'string' && payload.name in config) {
+       return config[payload.name];
+   }
 
+
+  // Final check if configLabelKey points to a valid config entry
   return configLabelKey in config
     ? config[configLabelKey]
-    : config[key as keyof typeof config]
+    : undefined; // Return undefined if no match found
 }
 
 export {
@@ -361,5 +380,6 @@ export {
   ChartTooltipContent,
   ChartLegend,
   ChartLegendContent,
-  ChartStyle,
+  ChartStyle, // Export ChartStyle
 }
+
