@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ReportTable } from './report-table';
 import type { ReportCategory, SharedMailboxTrafficStats } from '@/types/reporting';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Info } from 'lucide-react';
 
 interface ReportDisplayProps {
   selectedReport: ReportCategory | null;
@@ -37,7 +37,63 @@ async function fetchReportData(report: ReportCategory): Promise<any> {
   switch (report) {
     case 'Shared Mailbox Traffic Stats':
       return mockSharedMailboxStats;
-    // Add cases for other reports here, returning appropriate mock data or empty arrays
+    // Add cases for other reports here, returning appropriate mock data or empty arrays for now
+    // Azure AD Reports
+    case 'License Utilization':
+    case 'License Expiry':
+    case 'Users & Groups':
+    case 'Unlicensed User':
+    case 'User Managers & Direct Reports':
+    case 'Group Members':
+    case 'Group Owners':
+    case 'Group-based Licensing':
+    case 'Login Activities': // Azure AD
+    case 'Password Changes':
+    case 'MFA Disabled Users':
+    case 'Device Registrations':
+    // Security Reports
+    case 'MFA Enforced Users':
+    case 'MFA Non-Activated Users':
+    case 'Password Expiry':
+    case 'Users with Weak Passwords':
+    case 'External Users':
+    case 'Guest Users':
+    case 'Risky Login Attempts':
+    case 'External User License Assignments':
+    case 'Secure Score':
+    case 'eDiscovery':
+    case 'Non-Owner Mailbox Access':
+    case 'Data Loss Prevention (DLP)':
+    case 'Advanced Threat Protection':
+    // Sign-in Analysis Reports
+    case 'User Sign-in Location':
+    case 'Last Log-on Summary':
+    case 'External User Sign-ins':
+    case 'Guest Sign-ins':
+    case 'Non-Compliant Device Sign-ins':
+    case 'Unmanaged Device Sign-ins':
+    case 'MFA failed Sign-ins':
+    case '2FA Authentication Methods':
+    case 'Conditional Access failures':
+    case 'Conditional Access Policies':
+    case 'Sign-ins Risk Level':
+    case 'Unlikely Travel Risky Sign-ins':
+    case 'Anonymous IP Sign-ins':
+    case 'Compromised Risky Sign-ins':
+    // Email Reports
+    case 'Send as Emails':
+    case 'Send on Behalf Emails':
+    case 'Undelivered Mails':
+    case 'Mails Sent by Delegates':
+    case 'Email Traffic':
+    case 'External Email Forwarding':
+    case 'Spam Detections':
+    case 'Top Phish Receivers':
+    case 'External Spoof Mails':
+    case 'Top Malwares':
+    case 'Internal Mail flow':
+    case 'External Mail flow':
+    case "Users' Active Hours":
     case 'Email Activities':
     case 'Domain-wise Summary':
     case 'Group Email Activities':
@@ -54,8 +110,38 @@ async function fetchReportData(report: ReportCategory): Promise<any> {
     case 'Shared Mailbox Total Mails':
     case 'Groups Total Mails':
     case 'Peak Period Analysis':
-       return []; // Return empty array for now
+    // Teams Reports
+    case 'Public Teams':
+    case 'Private Teams':
+    case 'Teams Membership':
+    case 'Private & Shared Channels':
+    // case 'Login Activities': // Teams - Covered by Azure AD? Need specific API/command
+    case 'Private Channels':
+    case 'Team Setting Changes':
+    case 'Inactive Users': // Teams
+    case 'Teams Device Usage':
+    case 'External File Sharing':
+    case 'Teams Add-ons':
+    case 'Private Channel Membership Changes':
+    case 'Ownership Promotions and Demotions':
+    // Exchange Online Reports
+    case 'Mailbox Usage':
+    case 'Inactive Mailboxes':
+    case 'Active Out of Office Settings':
+    case 'Mailbox Permissions':
+    case 'Audit Disabled Mailboxes':
+    case 'Mailbox Hold':
+    case 'Mailbox Non-owner Access':
+    case 'Mobile Device Configurations':
+    case 'Public Folders':
+    case 'Role Assignments':
+    case 'Mail Flow': // Exchange
+    case 'Exchange Contacts':
+       return []; // Return empty array for all new reports for now
     default:
+      // Ensure exhaustive check or handle unknown cases
+      const _exhaustiveCheck: never = report;
+      console.warn(`Unhandled report type: ${report}`);
       return []; // Default empty array
   }
 }
@@ -79,7 +165,7 @@ export function ReportDisplay({ selectedReport }: ReportDisplayProps) {
         })
         .catch(err => {
           console.error("Error fetching report data:", err);
-          setError(`Failed to load data for ${selectedReport}.`);
+          setError(`Failed to load data for ${selectedReport}. Please try again later.`);
         })
         .finally(() => {
           setIsLoading(false);
@@ -97,15 +183,16 @@ export function ReportDisplay({ selectedReport }: ReportDisplayProps) {
       return (
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2">Loading report data...</span>
+          <span className="ml-2 text-muted-foreground">Loading report data...</span>
         </div>
       );
     }
 
     if (error) {
       return (
-        <Alert variant="destructive">
-          <AlertTitle>Error</AlertTitle>
+        <Alert variant="destructive" className="mt-4">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Error Loading Report</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       );
@@ -113,54 +200,89 @@ export function ReportDisplay({ selectedReport }: ReportDisplayProps) {
 
     if (!selectedReport) {
        return (
-         <Alert>
-           <AlertTitle>No Report Selected</AlertTitle>
-           <AlertDescription>Please select a report category from the sidebar to view data.</AlertDescription>
+         <Alert className="mt-4 border-primary/30">
+           <Info className="h-4 w-4" />
+           <AlertTitle>Select a Report</AlertTitle>
+           <AlertDescription>Please choose a report category from the sidebar to view the corresponding data.</AlertDescription>
          </Alert>
        );
     }
 
-    if (!reportData || (Array.isArray(reportData) && reportData.length === 0)) {
-       return (
-         <Alert>
-           <AlertTitle>No Data Available</AlertTitle>
-           <AlertDescription>There is no data available for the selected report: {selectedReport}.</AlertDescription>
-         </Alert>
-       );
-    }
-
-    // Render specific report components based on selectedReport
+    // --- Render Specific Reports ---
+    // Only 'Shared Mailbox Traffic Stats' is implemented with a table currently.
+    // All others will show the 'Not Implemented' or 'No Data' message.
     switch (selectedReport) {
       case 'Shared Mailbox Traffic Stats':
-        return <ReportTable data={reportData as SharedMailboxTrafficStats[]} />;
-      // Add cases for other report types here
+         if (!reportData || (Array.isArray(reportData) && reportData.length === 0)) {
+           return (
+             <Alert className="mt-4">
+                <Info className="h-4 w-4" />
+               <AlertTitle>No Data Available</AlertTitle>
+               <AlertDescription>There is no data available for the selected report: {selectedReport}.</AlertDescription>
+             </Alert>
+           );
+         }
+        return <ReportTable data={reportData as SharedMailboxTrafficStats[]} caption={selectedReport} />;
+
+      // --- Placeholder for all other reports ---
+      // Add specific components here as they are built (e.g., charts, different tables)
       // Example:
       // case 'User Email Traffic Stats':
       //   return <UserTrafficChart data={reportData} />;
+      // case 'Secure Score':
+      //    return <SecureScoreDisplay score={reportData?.score} recommendations={reportData?.recommendations} />
+
       default:
-        return (
-           <Alert>
-             <AlertTitle>Report View Not Implemented</AlertTitle>
-             <AlertDescription>The display for '{selectedReport}' is not yet available.</AlertDescription>
+         // Check if data exists but the component isn't implemented yet
+         if (reportData && Array.isArray(reportData) && reportData.length > 0) {
+             return (
+               <Alert className="mt-4">
+                 <Info className="h-4 w-4" />
+                 <AlertTitle>Report View Not Implemented</AlertTitle>
+                 <AlertDescription>Data loaded for '{selectedReport}', but the specific display component is not yet available.</AlertDescription>
+                 {/* Optionally display raw data for debugging */}
+                 {/* <pre className="mt-2 text-xs bg-muted p-2 rounded overflow-auto max-h-60">
+                   {JSON.stringify(reportData, null, 2)}
+                 </pre> */}
+               </Alert>
+             );
+         }
+         // If no data was loaded (empty array from mock fetch)
+         return (
+           <Alert className="mt-4">
+             <Info className="h-4 w-4" />
+             <AlertTitle>No Data / Not Implemented</AlertTitle>
+             <AlertDescription>
+               Either there is no data available for '{selectedReport}' or the report functionality is not yet implemented.
+             </AlertDescription>
            </Alert>
          );
     }
   };
 
   return (
-    // Use SidebarInset for proper layouting with the sidebar
-    <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
-      <Card className="w-full shadow-lg h-full flex flex-col">
-        <CardHeader>
-          <CardTitle className="text-xl">{selectedReport || 'Reporting'}</CardTitle>
+    // Use flex-1 and overflow-auto for proper layouting within the tab content
+    <main className="flex-1 p-4 md:p-6 overflow-auto">
+      <Card className="w-full shadow-lg h-full flex flex-col border-border/50">
+        <CardHeader className="border-b border-border/50">
+          <CardTitle className="text-xl text-primary">{selectedReport || 'Select a Report'}</CardTitle>
           <CardDescription>
-            {selectedReport ? `Details for ${selectedReport}` : 'Select a report from the sidebar.'}
+            {selectedReport ? `Viewing details for ${selectedReport}` : 'Choose a report from the sidebar.'}
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex-1 overflow-auto">
+        <CardContent className="flex-1 overflow-auto pt-4">
            {renderReportContent()}
         </CardContent>
       </Card>
      </main>
   );
 }
+
+// --- Placeholder for other report components ---
+// Example:
+// function UserTrafficChart({ data }: { data: any }) {
+//   return <div>User Traffic Chart Component (Not Implemented)</div>;
+// }
+// function SecureScoreDisplay({ score, recommendations }: { score: number | null, recommendations: any[] | null }) {
+//   return <div>Secure Score Component (Not Implemented)</div>;
+// }
