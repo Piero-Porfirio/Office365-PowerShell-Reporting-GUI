@@ -20,24 +20,27 @@ import {
 import type { LicenseUtilizationData } from '@/types/reporting';
 import { cn } from '@/lib/utils';
 
-interface LicenseUtilizationChartProps {
-  data: LicenseUtilizationData[];
+interface ReportComponentProps {
+  data: any; // Expect generic data here
   caption?: string;
 }
 
-// Enhance data type to include AvailableUnits if not already present
+// Enhance data type expected by this specific chart
 type ChartLicenseData = LicenseUtilizationData & { AvailableUnits?: number };
 
 // Define colors for the chart segments
 const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-3))', 'hsl(var(--chart-5))', 'hsl(var(--chart-2))', 'hsl(var(--chart-4))'];
 
-export function LicenseUtilizationChart({ data, caption = "License Utilization" }: LicenseUtilizationChartProps) {
+export function LicenseUtilizationChart({ data, caption = "License Utilization" }: ReportComponentProps) {
+
+  // Ensure data is treated as LicenseUtilizationData[] for processing
+  const licenseData = useMemo(() => (data as LicenseUtilizationData[] || []), [data]);
 
   // Calculate available units and aggregate data if multiple entries for the same license type exist
   const aggregatedData = useMemo(() => {
     const map = new Map<string, { SkuPartNumber: string; ConsumedUnits: number; TotalUnits: number; AvailableUnits: number }>();
 
-    data.forEach(item => {
+    licenseData.forEach(item => {
         const key = item.SkuPartNumber;
         const existing = map.get(key);
         const consumed = item.ConsumedUnits || 0;
@@ -59,7 +62,7 @@ export function LicenseUtilizationChart({ data, caption = "License Utilization" 
     });
 
     return Array.from(map.values());
-  }, [data]);
+  }, [licenseData]);
 
   // Prepare data specifically for the Pie chart (Assigned vs Available per license type)
   const chartData = useMemo(() => {

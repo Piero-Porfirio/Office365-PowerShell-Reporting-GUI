@@ -21,12 +21,15 @@ import {
 import type { SharedMailboxTrafficStats } from '@/types/reporting';
 import { cn } from '@/lib/utils';
 
-interface SharedMailboxTrafficChartProps {
-  data: SharedMailboxTrafficStats[];
+interface ReportComponentProps {
+  data: any; // Expect generic data here
   caption?: string;
 }
 
-export function SharedMailboxTrafficChart({ data, caption = "Shared Mailbox Traffic" }: SharedMailboxTrafficChartProps) {
+export function SharedMailboxTrafficChart({ data, caption = "Shared Mailbox Traffic" }: ReportComponentProps) {
+
+  // Ensure data is treated as SharedMailboxTrafficStats[] for processing
+  const trafficData = useMemo(() => (data as SharedMailboxTrafficStats[] || []), [data]);
 
   // Aggregate data per mailbox across different months if necessary, or prepare for chart
   const aggregatedData = useMemo(() => {
@@ -38,7 +41,7 @@ export function SharedMailboxTrafficChart({ data, caption = "Shared Mailbox Traf
         externalMailsReceived: number;
     }>();
 
-    data.forEach(item => {
+    trafficData.forEach(item => {
         const key = item.sharedMailboxUPN; // Use UPN as unique key
         const existing = map.get(key);
 
@@ -65,7 +68,7 @@ export function SharedMailboxTrafficChart({ data, caption = "Shared Mailbox Traf
     });
      // Sort by total received emails, descending
      return Array.from(map.values()).sort((a, b) => b.totalMailsReceived - a.totalMailsReceived);
-  }, [data]);
+  }, [trafficData]);
 
   // Define chart configuration for colors and labels
   const chartConfig = useMemo(() => ({

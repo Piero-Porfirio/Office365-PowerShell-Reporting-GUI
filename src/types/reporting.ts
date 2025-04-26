@@ -1,5 +1,6 @@
 
 
+
 /**
  * Defines the categories of reports available in the reporting section.
  * These should match the labels/identifiers used in the sidebar and display logic.
@@ -137,6 +138,7 @@ export interface LicenseUtilizationData {
   SkuPartNumber: string;
   ConsumedUnits: number;
   TotalUnits: number; // Combined from PrepaidUnits sub-properties
+  AvailableUnits?: number; // Optionally calculated
 }
 
 /**
@@ -154,6 +156,19 @@ export interface AzureADUserGroupInfo {
   description?: string | null;
   groupType?: string | string[];
 }
+
+/**
+ * Defines the possible visualization types for reports.
+ */
+export type VisualizationType =
+ | 'Table'
+ | 'PieChart'
+ | 'BarChart'
+ // Add other chart types as needed
+ // | 'LineChart'
+ // | 'AreaChart'
+ // | 'ScatterChart'
+ ;
 
 
 // --- Report Category Grouping ---
@@ -221,3 +236,4 @@ export const ReportGroups = {
 //    AzureADUserGroupInfo |
 //    // ... other report types
 //    null;
+
