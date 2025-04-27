@@ -4,9 +4,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ReportTable } from './report-table';
-import type { ReportCategory, SharedMailboxTrafficStats, LicenseUtilizationData, AzureADUserGroupInfo, VisualizationType } from '@/types/reporting';
+import type { ReportCategory, SharedMailboxTrafficStats, LicenseUtilizationData, AzureADUserGroupInfo, VisualizationType, IntuneDeviceCompliance, IntuneWindowsUpdateStatus, IntuneEnrolledDevice, IntuneAppInfo } from '@/types/reporting';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, Info, AlertTriangle, BarChart, PieChartIcon, TableIcon } from 'lucide-react'; // Added icons
+import { Loader2, Info, AlertTriangle, BarChart, PieChartIcon, TableIcon, Laptop } from 'lucide-react'; // Added icons, including Laptop for Intune
 import { executeAzurePowerShellCommand } from '@/services/azure';
 import { executeOffice365PowerShellCommand } from '@/services/office365';
 import { PowerShellResult } from '@/services/powershell'; // Generic result type
@@ -42,12 +42,15 @@ const visualizationComponents: Record<VisualizationType, { component: React.Comp
 
 interface ReportConfigEntry {
     command: string;
+    // Use a more generic service execution function type
+    // This allows using Azure, Office365, or potentially a future Intune-specific service
     service: (command: string) => Promise<PowerShellResult>;
     parser: (output: string | null) => any;
     visualizations: VisualizationType[]; // List available visualization types
     defaultVisualization: VisualizationType; // Default view for this report
     simulatedData?: any;
-    apiTarget: 'azure' | 'office365';
+    // Keep apiTarget for clarity on which backend endpoint is intended, even if service is generic
+    apiTarget: 'azure' | 'office365' | 'intune';
 }
 
 
@@ -917,6 +920,62 @@ const reportConfig: Record<ReportCategory, ReportConfigEntry> = {
         defaultVisualization: 'Table',
         simulatedData: [ { DisplayName: 'External Partner', ExternalEmailAddress: 'partner@example.com' } ]
     },
+
+     // --- Intune Reports ---
+     // NOTE: Intune commands often use Get-MgDeviceManagementManagedDevice or related Graph API calls.
+     // The 'service' used here (Azure) assumes the necessary Graph permissions are granted.
+     // A dedicated Intune API endpoint might be better long-term.
+    "Device Compliance Status": {
+       command: "Get-MgDeviceManagementManagedDevice | Select Id,DeviceName,OperatingSystem,ComplianceState,LastSyncDateTime | ConvertTo-Json",
+       service: executeAzurePowerShellCommand, // Assuming Graph API via Azure endpoint
+       apiTarget: 'intune', // Indicating intent
+       parser: (output) => { try { return output ? JSON.parse(output) as IntuneDeviceCompliance[] : []; } catch (e) { console.error("Error parsing Device Compliance:", e); return []; } },
+       visualizations: ['Table', 'PieChart'], // Could add PieChart for compliance breakdown
+       defaultVisualization: 'Table',
+       simulatedData: [
+         { id: 'dev1', displayName: 'Laptop-Alice', operatingSystem: 'Windows 11', complianceState: 'Compliant', lastSyncDateTime: '2024-05-21T10:00:00Z' },
+         { id: 'dev2', displayName: 'Surface-Bob', operatingSystem: 'Windows 10', complianceState: 'NonCompliant', lastSyncDateTime: '2024-05-20T09:00:00Z' },
+         { id: 'dev3', displayName: 'MacBook-Charlie', operatingSystem: 'macOS', complianceState: 'Compliant', lastSyncDateTime: '2024-05-21T11:00:00Z' },
+       ]
+    },
+    "Windows Update Compliance": {
+        command: "Get-MgDeviceManagementManagedDevice -Filter \"OperatingSystem eq 'Windows'\" | Get-MgDeviceManagementManagedDeviceWindowsUpdateState | Select DeviceId, DeviceDisplayName, OsVersion, Status, LastScanTime, LastUpdateTime | ConvertTo-Json # Simplified, real query might need aggregation",
+        service: executeAzurePowerShellCommand,
+        apiTarget: 'intune',
+        parser: (output) => { try { return output ? JSON.parse(output) as IntuneWindowsUpdateStatus[] : []; } catch (e) { console.error("Error parsing Windows Update Status:", e); return []; } },
+        visualizations: ['Table', 'BarChart'], // Could add BarChart for status breakdown
+        defaultVisualization: 'Table',
+        simulatedData: [
+          { deviceId: 'dev1', deviceName: 'Laptop-Alice', osVersion: '10.0.22631', status: 'Up-to-date', lastScanTime: '2024-05-21T08:00:00Z', lastUpdateTime: '2024-05-20T01:00:00Z' },
+          { deviceId: 'dev2', deviceName: 'Surface-Bob', osVersion: '10.0.19045', status: 'Pending Updates', lastScanTime: '2024-05-20T07:30:00Z', lastUpdateTime: '2024-05-15T02:00:00Z' },
+        ]
+    },
+    "Enrolled Devices Overview": {
+        command: "Get-MgDeviceManagementManagedDevice | Select DeviceName,OperatingSystem,EnrollmentType,ManagementAgent,LastSyncDateTime | ConvertTo-Json",
+        service: executeAzurePowerShellCommand,
+        apiTarget: 'intune',
+        parser: (output) => { try { return output ? JSON.parse(output) as IntuneEnrolledDevice[] : []; } catch (e) { console.error("Error parsing Enrolled Devices:", e); return []; } },
+        visualizations: ['Table', 'PieChart'], // PieChart for OS or Enrollment Type
+        defaultVisualization: 'Table',
+        simulatedData: [
+          { deviceName: 'Laptop-Alice', operatingSystem: 'Windows 11', enrollmentType: 'UserEnrollment', managementAgent: 'MDM', lastSyncDateTime: '2024-05-21T10:00:00Z' },
+          { deviceName: 'iPhone-Dave', operatingSystem: 'iOS', enrollmentType: 'DeviceEnrollment', managementAgent: 'MDM', lastSyncDateTime: '2024-05-21T10:30:00Z' },
+          { deviceName: 'MacBook-Charlie', operatingSystem: 'macOS', enrollmentType: 'UserEnrollment', managementAgent: 'MDM', lastSyncDateTime: '2024-05-21T11:00:00Z' },
+        ]
+    },
+    "App Inventory": {
+        command: "Get-MgDeviceAppManagementMobileApp -Filter \"IsOf('microsoft.graph.managedMobileLobApp') or IsOf('microsoft.graph.win32LobApp')\" | Select DisplayName,Publisher,Version | ConvertTo-Json # Example for Managed LOB/Win32 apps",
+        service: executeAzurePowerShellCommand,
+        apiTarget: 'intune',
+        parser: (output) => { try { return output ? JSON.parse(output) as IntuneAppInfo[] : []; } catch (e) { console.error("Error parsing App Inventory:", e); return []; } },
+        visualizations: ['Table'],
+        defaultVisualization: 'Table',
+        simulatedData: [
+          { displayName: 'Company Portal', publisher: 'Microsoft Corporation', version: '5.2403.0' },
+          { displayName: 'Internal HR App', publisher: 'Contoso IT', version: '2.1.5' },
+          { displayName: 'Adobe Acrobat Reader DC', publisher: 'Adobe Systems, Incorporated', version: '23.008.20470' },
+        ]
+    },
 };
 
 
@@ -980,7 +1039,7 @@ export function ReportDisplay({ selectedReport }: ReportDisplayProps) {
           resultOutput = JSON.stringify(config.simulatedData);
       } else {
           // If no simulated data, call the API (which might have its own simulation)
-          console.log(`Executing command for ${report}: ${config.command}`);
+          console.log(`Executing command for ${report} via ${config.apiTarget} endpoint: ${config.command}`);
           const result = await config.service(config.command);
           apiError = result.error;
           resultOutput = result.output;
@@ -1145,7 +1204,7 @@ export function ReportDisplay({ selectedReport }: ReportDisplayProps) {
             </CardDescription>
           </div>
           {/* Visualization Dropdown */}
-          {selectedReport && availableVisualizations && availableVisualizations.length > 1 && !isLoading && !error && reportData && (
+          {selectedReport && availableVisualizations && availableVisualizations.length > 1 && !isLoading && !error && reportData && Array.isArray(reportData) && reportData.length > 0 && (
             <div className="flex items-center gap-2">
               <Label htmlFor="visualization-select" className="text-sm font-medium text-muted-foreground">View As:</Label>
               <Select
@@ -1181,4 +1240,3 @@ export function ReportDisplay({ selectedReport }: ReportDisplayProps) {
      </main>
   );
 }
-    

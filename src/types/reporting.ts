@@ -1,6 +1,5 @@
 
 
-
 /**
  * Defines the categories of reports available in the reporting section.
  * These should match the labels/identifiers used in the sidebar and display logic.
@@ -113,7 +112,13 @@ export type ReportCategory =
   | "Public Folders"
   | "Role Assignments"
   | "Mail Flow" // Exchange Mail Flow (potentially distinct from general email flow)
-  | "Exchange Contacts";
+  | "Exchange Contacts"
+
+  // Intune Reports
+  | "Device Compliance Status"
+  | "Windows Update Compliance"
+  | "Enrolled Devices Overview"
+  | "App Inventory";
 
 
 /**
@@ -156,6 +161,51 @@ export interface AzureADUserGroupInfo {
   description?: string | null;
   groupType?: string | string[];
 }
+
+/**
+ * Represents basic data structure for Intune Device Compliance Status.
+ */
+export interface IntuneDeviceCompliance {
+  id: string;
+  displayName: string; // Typically device name
+  operatingSystem: string;
+  complianceState: 'Compliant' | 'NonCompliant' | 'InGracePeriod' | 'Unknown' | string; // Allow other states
+  lastSyncDateTime: string; // ISO 8601 date string
+}
+
+/**
+ * Represents basic data structure for Windows Update Compliance (Simplified).
+ * A real report would be much more complex.
+ */
+export interface IntuneWindowsUpdateStatus {
+    deviceId: string;
+    deviceName: string;
+    osVersion: string;
+    status: 'Up-to-date' | 'Pending Updates' | 'Error' | 'Unknown' | string;
+    lastScanTime: string; // ISO 8601 date string
+    lastUpdateTime?: string; // ISO 8601 date string
+}
+
+/**
+ * Represents basic data structure for Enrolled Devices Overview.
+ */
+export interface IntuneEnrolledDevice {
+    deviceName: string;
+    operatingSystem: string;
+    enrollmentType: string; // e.g., 'UserEnrollment', 'DeviceEnrollment'
+    managementAgent: string; // e.g., 'MDM', 'IntuneManagementExtension'
+    lastSyncDateTime: string; // ISO 8601 date string
+}
+
+/**
+ * Represents basic data structure for App Inventory.
+ */
+export interface IntuneAppInfo {
+    displayName: string;
+    publisher: string | null;
+    version: string | null;
+}
+
 
 /**
  * Defines the possible visualization types for reports.
@@ -221,6 +271,12 @@ export const ReportGroups = {
     "Role Assignments", "Mail Flow", // Specify context: "Exchange Mail Flow"
     "Exchange Contacts"
   ],
+  INTUNE: [
+    "Device Compliance Status",
+    "Windows Update Compliance",
+    "Enrolled Devices Overview",
+    "App Inventory",
+  ],
 };
 
 // Add interfaces for other report data structures here as commands are implemented
@@ -234,6 +290,9 @@ export const ReportGroups = {
 //    SharedMailboxTrafficStats |
 //    LicenseUtilizationData |
 //    AzureADUserGroupInfo |
+//    IntuneDeviceCompliance |
+//    IntuneWindowsUpdateStatus |
+//    IntuneEnrolledDevice |
+//    IntuneAppInfo |
 //    // ... other report types
 //    null;
-

@@ -27,7 +27,7 @@ import {
   CalendarClock,
   Clock,
   CalendarDays,
-  Calendar,
+  Calendar, // Corrected: Removed CalendarMonth
   Group,
   User,
   Box, // Placeholder, consider Package
@@ -60,6 +60,7 @@ import {
   Share2, // External Sharing
   Plug, // Add-ons
   Tv, // Device Sign-ins / Registrations
+  Laptop, // Added for Intune
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ReportCategory, ReportGroups } from '@/types/reporting';
@@ -234,6 +235,19 @@ export function ReportingSidebar({ selectedReport, onSelectReport }: ReportingSi
                   "Role Assignments", "Mail Flow", // Consider differentiating
                   "Exchange Contacts"
                ], Box)}
+            </SidebarMenuSub>
+          </SidebarMenuItem>
+
+           {/* Intune Section */}
+           <SidebarMenuItem>
+            <SidebarMenuButton icon={Laptop}>Intune</SidebarMenuButton>
+            <SidebarMenuSub>
+               {renderMenuItems([
+                  "Device Compliance Status",
+                  "Windows Update Compliance",
+                  "Enrolled Devices Overview",
+                  "App Inventory",
+               ], Laptop)}
             </SidebarMenuSub>
           </SidebarMenuItem>
 
