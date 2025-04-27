@@ -117,6 +117,7 @@ export type ReportCategory =
   // Intune Reports
   | "Device Compliance Status"
   | "Windows Update Compliance"
+  | "Windows Update Overview" // Added new report
   | "Enrolled Devices Overview"
   | "App Inventory";
 
@@ -185,6 +186,19 @@ export interface IntuneWindowsUpdateStatus {
     lastScanTime: string; // ISO 8601 date string
     lastUpdateTime?: string; // ISO 8601 date string
 }
+
+/**
+ * Represents detailed Windows Update Status for Intune devices.
+ */
+export interface IntuneWindowsUpdateOverview {
+    deviceName: string;
+    updateDisplayName: string; // Name/Title of the specific update (e.g., KB number)
+    status: 'Installed' | 'PendingInstall' | 'Failed' | 'PendingReboot' | 'Offered' | 'Unknown' | string; // Example statuses
+    rebootRequired: boolean; // Explicitly track reboot status
+    lastScanTime?: string; // ISO 8601 date string
+    lastUpdateTime?: string; // ISO 8601 date string
+}
+
 
 /**
  * Represents basic data structure for Enrolled Devices Overview.
@@ -274,6 +288,7 @@ export const ReportGroups = {
   INTUNE: [
     "Device Compliance Status",
     "Windows Update Compliance",
+    "Windows Update Overview", // Added new report
     "Enrolled Devices Overview",
     "App Inventory",
   ],
@@ -292,7 +307,9 @@ export const ReportGroups = {
 //    AzureADUserGroupInfo |
 //    IntuneDeviceCompliance |
 //    IntuneWindowsUpdateStatus |
+//    IntuneWindowsUpdateOverview | // Added
 //    IntuneEnrolledDevice |
 //    IntuneAppInfo |
 //    // ... other report types
 //    null;
+

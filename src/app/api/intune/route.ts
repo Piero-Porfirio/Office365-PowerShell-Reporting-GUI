@@ -1,6 +1,7 @@
 
+
 import { NextResponse } from 'next/server';
-import type { IntuneDeviceCompliance, IntuneWindowsUpdateStatus, IntuneEnrolledDevice, IntuneAppInfo } from '@/types/reporting'; // Import Intune types
+import type { IntuneDeviceCompliance, IntuneWindowsUpdateStatus, IntuneEnrolledDevice, IntuneAppInfo, IntuneWindowsUpdateOverview } from '@/types/reporting'; // Import Intune types including IntuneWindowsUpdateOverview
 
 // --- Simulated Intune Data ---
 const simulatedDeviceCompliance: IntuneDeviceCompliance[] = [
@@ -14,6 +15,16 @@ const simulatedUpdateStatus: IntuneWindowsUpdateStatus[] = [
   { deviceId: 'dev1', deviceName: 'Laptop-Alice', osVersion: '10.0.22631', status: 'Up-to-date', lastScanTime: '2024-05-21T08:00:00Z', lastUpdateTime: '2024-05-20T01:00:00Z' },
   { deviceId: 'dev2', deviceName: 'Surface-Bob', osVersion: '10.0.19045', status: 'Pending Updates', lastScanTime: '2024-05-20T07:30:00Z', lastUpdateTime: '2024-05-15T02:00:00Z' },
 ];
+
+const simulatedUpdateOverview: IntuneWindowsUpdateOverview[] = [
+   { deviceName: 'Laptop-Alice', updateDisplayName: 'KB5037771', status: 'Installed', rebootRequired: false, lastScanTime: '2024-05-21T08:00:00Z', lastUpdateTime: '2024-05-20T01:00:00Z' },
+   { deviceName: 'Laptop-Alice', updateDisplayName: 'Feature Update 23H2', status: 'Installed', rebootRequired: false, lastScanTime: '2024-05-21T08:00:00Z', lastUpdateTime: '2024-05-18T02:00:00Z' },
+   { deviceName: 'Surface-Bob', updateDisplayName: 'KB5037768', status: 'PendingInstall', rebootRequired: false, lastScanTime: '2024-05-20T07:30:00Z' },
+   { deviceName: 'Surface-Bob', updateDisplayName: 'Security Update May 2024', status: 'Installed', rebootRequired: true, lastScanTime: '2024-05-20T07:30:00Z', lastUpdateTime: '2024-05-15T02:00:00Z' },
+   { deviceName: 'Workstation-Eve', updateDisplayName: 'KB5037771', status: 'Failed', rebootRequired: false, lastScanTime: '2024-05-21T09:00:00Z' },
+   { deviceName: 'Workstation-Eve', updateDisplayName: 'Defender Update v1.411.7.0', status: 'PendingReboot', rebootRequired: true, lastScanTime: '2024-05-21T09:00:00Z', lastUpdateTime: '2024-05-21T08:30:00Z' },
+ ];
+
 
 const simulatedEnrolledDevices: IntuneEnrolledDevice[] = [
   { deviceName: 'Laptop-Alice', operatingSystem: 'Windows 11', enrollmentType: 'UserEnrollment', managementAgent: 'MDM', lastSyncDateTime: '2024-05-21T10:00:00Z' },
@@ -36,6 +47,11 @@ function getSimulatedData(command: string): { output: string; error?: string } {
     if (command.includes('Get-MgDeviceManagementManagedDevice') && command.includes('ComplianceState')) {
         return { output: JSON.stringify(simulatedDeviceCompliance) };
     }
+    // Check for the more complex Update Overview command signature
+    if (command.includes('Get-MgDeviceManagementManagedDeviceWindowsUpdateState') && command.includes('foreach ($device in $devices)')) {
+        return { output: JSON.stringify(simulatedUpdateOverview) };
+    }
+    // Fallback for the simpler Windows Update Compliance command (if needed)
     if (command.includes('Get-MgDeviceManagementManagedDeviceWindowsUpdateState')) {
         return { output: JSON.stringify(simulatedUpdateStatus) };
     }
@@ -84,3 +100,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ output: '', error: `Internal Server Error in Simulation: ${errorMessage}` }, { status: 500 });
   }
 }
+

@@ -1,14 +1,16 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ReportTable } from './report-table';
-import type { ReportCategory, SharedMailboxTrafficStats, LicenseUtilizationData, AzureADUserGroupInfo, VisualizationType, IntuneDeviceCompliance, IntuneWindowsUpdateStatus, IntuneEnrolledDevice, IntuneAppInfo } from '@/types/reporting';
+import type { ReportCategory, SharedMailboxTrafficStats, LicenseUtilizationData, AzureADUserGroupInfo, VisualizationType, IntuneDeviceCompliance, IntuneWindowsUpdateStatus, IntuneEnrolledDevice, IntuneAppInfo, IntuneWindowsUpdateOverview } from '@/types/reporting'; // Added IntuneWindowsUpdateOverview
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Info, AlertTriangle, BarChart, PieChartIcon, TableIcon, Laptop } from 'lucide-react'; // Added icons, including Laptop for Intune
 import { executeAzurePowerShellCommand } from '@/services/azure';
 import { executeOffice365PowerShellCommand } from '@/services/office365';
+import { executeIntunePowerShellCommand } from '@/services/intune'; // Import Intune service
 import { PowerShellResult } from '@/services/powershell'; // Generic result type
 import { LicenseUtilizationChart } from './license-utilization-chart'; // Import new chart component
 import { SharedMailboxTrafficChart } from './shared-mailbox-traffic-chart'; // Import new chart component
@@ -42,14 +44,16 @@ const visualizationComponents: Record<VisualizationType, { component: React.Comp
 
 interface ReportConfigEntry {
     command: string;
-    // Use a more generic service execution function type
-    // This allows using Azure, Office365, or potentially a future Intune-specific service
-    service: (command: string) => Promise<PowerShellResult>;
+    // Use a more specific service execution function type based on apiTarget
+    service:
+       | typeof executeAzurePowerShellCommand
+       | typeof executeOffice365PowerShellCommand
+       | typeof executeIntunePowerShellCommand; // Added Intune service type
     parser: (output: string | null) => any;
     visualizations: VisualizationType[]; // List available visualization types
     defaultVisualization: VisualizationType; // Default view for this report
     simulatedData?: any;
-    // Keep apiTarget for clarity on which backend endpoint is intended, even if service is generic
+    // Keep apiTarget for clarity on which backend endpoint is intended
     apiTarget: 'azure' | 'office365' | 'intune';
 }
 
@@ -922,12 +926,9 @@ const reportConfig: Record<ReportCategory, ReportConfigEntry> = {
     },
 
      // --- Intune Reports ---
-     // NOTE: Intune commands often use Get-MgDeviceManagementManagedDevice or related Graph API calls.
-     // The 'service' used here (Azure) assumes the necessary Graph permissions are granted.
-     // A dedicated Intune API endpoint might be better long-term.
     "Device Compliance Status": {
        command: "Get-MgDeviceManagementManagedDevice | Select Id,DeviceName,OperatingSystem,ComplianceState,LastSyncDateTime | ConvertTo-Json",
-       service: executeAzurePowerShellCommand, // Assuming Graph API via Azure endpoint
+       service: executeIntunePowerShellCommand, // Use Intune endpoint
        apiTarget: 'intune', // Indicating intent
        parser: (output) => { try { return output ? JSON.parse(output) as IntuneDeviceCompliance[] : []; } catch (e) { console.error("Error parsing Device Compliance:", e); return []; } },
        visualizations: ['Table', 'PieChart'], // Could add PieChart for compliance breakdown
@@ -940,7 +941,7 @@ const reportConfig: Record<ReportCategory, ReportConfigEntry> = {
     },
     "Windows Update Compliance": {
         command: "Get-MgDeviceManagementManagedDevice -Filter \"OperatingSystem eq 'Windows'\" | Get-MgDeviceManagementManagedDeviceWindowsUpdateState | Select DeviceId, DeviceDisplayName, OsVersion, Status, LastScanTime, LastUpdateTime | ConvertTo-Json # Simplified, real query might need aggregation",
-        service: executeAzurePowerShellCommand,
+        service: executeIntunePowerShellCommand,
         apiTarget: 'intune',
         parser: (output) => { try { return output ? JSON.parse(output) as IntuneWindowsUpdateStatus[] : []; } catch (e) { console.error("Error parsing Windows Update Status:", e); return []; } },
         visualizations: ['Table', 'BarChart'], // Could add BarChart for status breakdown
@@ -950,9 +951,24 @@ const reportConfig: Record<ReportCategory, ReportConfigEntry> = {
           { deviceId: 'dev2', deviceName: 'Surface-Bob', osVersion: '10.0.19045', status: 'Pending Updates', lastScanTime: '2024-05-20T07:30:00Z', lastUpdateTime: '2024-05-15T02:00:00Z' },
         ]
     },
+     "Windows Update Overview": {
+         command: "$devices = Get-MgDeviceManagementManagedDevice -Filter \"OperatingSystem eq 'Windows'\" -Select Id,DeviceName; $allUpdates = @(); foreach ($device in $devices) { $updates = Get-MgDeviceManagementManagedDeviceWindowsUpdateState -ManagedDeviceId $device.Id | Select @{N='deviceName';E={$device.DeviceName}}, @{N='updateDisplayName';E={$_.DisplayName}}, Status, @{N='rebootRequired';E={$_.RebootRequired}}, LastScanTime, LastUpdateTime; $allUpdates += $updates }; $allUpdates | ConvertTo-Json",
+         service: executeIntunePowerShellCommand,
+         apiTarget: 'intune',
+         parser: (output) => { try { return output ? JSON.parse(output) as IntuneWindowsUpdateOverview[] : []; } catch (e) { console.error("Error parsing Windows Update Overview:", e); return []; } },
+         visualizations: ['Table'], // Maybe BarChart by status later
+         defaultVisualization: 'Table',
+         simulatedData: [
+           { deviceName: 'Laptop-Alice', updateDisplayName: 'KB5037771', status: 'Installed', rebootRequired: false, lastScanTime: '2024-05-21T08:00:00Z', lastUpdateTime: '2024-05-20T01:00:00Z' },
+           { deviceName: 'Laptop-Alice', updateDisplayName: 'Feature Update 23H2', status: 'Installed', rebootRequired: false, lastScanTime: '2024-05-21T08:00:00Z', lastUpdateTime: '2024-05-18T02:00:00Z' },
+           { deviceName: 'Surface-Bob', updateDisplayName: 'KB5037768', status: 'PendingInstall', rebootRequired: false, lastScanTime: '2024-05-20T07:30:00Z' },
+           { deviceName: 'Surface-Bob', updateDisplayName: 'Security Update May 2024', status: 'Installed', rebootRequired: true, lastScanTime: '2024-05-20T07:30:00Z', lastUpdateTime: '2024-05-15T02:00:00Z' },
+           { deviceName: 'Workstation-Eve', updateDisplayName: 'KB5037771', status: 'Failed', rebootRequired: false, lastScanTime: '2024-05-21T09:00:00Z' },
+         ]
+     },
     "Enrolled Devices Overview": {
         command: "Get-MgDeviceManagementManagedDevice | Select DeviceName,OperatingSystem,EnrollmentType,ManagementAgent,LastSyncDateTime | ConvertTo-Json",
-        service: executeAzurePowerShellCommand,
+        service: executeIntunePowerShellCommand,
         apiTarget: 'intune',
         parser: (output) => { try { return output ? JSON.parse(output) as IntuneEnrolledDevice[] : []; } catch (e) { console.error("Error parsing Enrolled Devices:", e); return []; } },
         visualizations: ['Table', 'PieChart'], // PieChart for OS or Enrollment Type
@@ -965,7 +981,7 @@ const reportConfig: Record<ReportCategory, ReportConfigEntry> = {
     },
     "App Inventory": {
         command: "Get-MgDeviceAppManagementMobileApp -Filter \"IsOf('microsoft.graph.managedMobileLobApp') or IsOf('microsoft.graph.win32LobApp')\" | Select DisplayName,Publisher,Version | ConvertTo-Json # Example for Managed LOB/Win32 apps",
-        service: executeAzurePowerShellCommand,
+        service: executeIntunePowerShellCommand,
         apiTarget: 'intune',
         parser: (output) => { try { return output ? JSON.parse(output) as IntuneAppInfo[] : []; } catch (e) { console.error("Error parsing App Inventory:", e); return []; } },
         visualizations: ['Table'],
@@ -1240,3 +1256,4 @@ export function ReportDisplay({ selectedReport }: ReportDisplayProps) {
      </main>
   );
 }
+

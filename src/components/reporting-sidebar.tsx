@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -61,6 +62,7 @@ import {
   Plug, // Add-ons
   Tv, // Device Sign-ins / Registrations
   Laptop, // Added for Intune
+  Wrench, // For Windows Updates
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ReportCategory, ReportGroups } from '@/types/reporting';
@@ -245,6 +247,7 @@ export function ReportingSidebar({ selectedReport, onSelectReport }: ReportingSi
                {renderMenuItems([
                   "Device Compliance Status",
                   "Windows Update Compliance",
+                  "Windows Update Overview", // Added new report
                   "Enrolled Devices Overview",
                   "App Inventory",
                ], Laptop)}
@@ -264,3 +267,4 @@ export function ReportingSidebar({ selectedReport, onSelectReport }: ReportingSi
     </Sidebar>
   );
 }
+
