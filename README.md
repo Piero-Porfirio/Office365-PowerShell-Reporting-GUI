@@ -1,9 +1,24 @@
 <<<<<<< HEAD
-# Firebase Studio
+# Office365-PowerShell-Reporting-GUI
 
-This is a NextJS starter in Firebase Studio.
+> This project is a GUI-based reporting tool designed to streamline and simplify common Azure and Office 365 administrative functions. It empowers administrators by leveraging the robust capabilities of PowerShell to generate detailed reports and provide actionable insights into their cloud environments.
 
-To get started, take a look at src/app/page.tsx.
+# Key Features
+
+*   **User Sign-in Analysis:** Generate reports on user sign-in locations, last log-on summaries, external sign-ins, guest sign-ins, and more.
+*   **Device Compliance Reporting:** Get insights into non-compliant and unmanaged device sign-ins.
+*   **Authentication Analysis:** Analyze MFA failures, 2FA authentication methods, and conditional access failures.
+*   **Risk Assessment:** Monitor sign-in risk levels, unlikely travel, and anonymous IP sign-ins.
+*   **Intuitive GUI:** Interact with your Azure and Office 365 data through a user-friendly graphical interface, no need to remember complex PowerShell commands.
+*   **Intune Reporting:** Retrieve a list of all Intune applications.
+
+# Installation
+
+This application requires Node.js, npm, and PowerShell to be installed.
+
+1.  **Clone the repository:**
+
+
 =======
 # Office365-PowerShell-Reporting-GUI
 
