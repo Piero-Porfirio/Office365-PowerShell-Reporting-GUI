@@ -17,6 +17,8 @@ To get started, take a look at src/app/page.tsx.
 *   **Risk Assessment:** Monitor sign-in risk levels, unlikely travel, and anonymous IP sign-ins.
 *   **Intuitive GUI:** Interact with your Azure and Office 365 data through a user-friendly graphical interface, no need to remember complex PowerShell commands.
 * **Intune Reporting:** Retrieve a list of all intune applications.
+* ![image](https://github.com/user-attachments/assets/37effac8-f5e6-446c-b386-c1a1f8d6721a)
+
 
 ## Installation
 
