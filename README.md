@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # Office365-PowerShell-Reporting-GUI
 
 > This project is a GUI-based reporting tool designed to streamline and simplify common Azure and Office 365 administrative functions. It empowers administrators by leveraging the robust capabilities of PowerShell to generate detailed reports and provide actionable insights into their cloud environments.
@@ -17,6 +18,10 @@
 This application requires Node.js, npm, and PowerShell to be installed.
 
 1.  **Clone the repository:**
+=======
+
+# Firebase Studio
+>>>>>>> da31cf5d8b9551505fa38e8f7d00f6dda24c36ea
 
 
 =======
@@ -32,6 +37,8 @@ This application requires Node.js, npm, and PowerShell to be installed.
 *   **Risk Assessment:** Monitor sign-in risk levels, unlikely travel, and anonymous IP sign-ins.
 *   **Intuitive GUI:** Interact with your Azure and Office 365 data through a user-friendly graphical interface, no need to remember complex PowerShell commands.
 * **Intune Reporting:** Retrieve a list of all intune applications.
+* ![image](https://github.com/user-attachments/assets/37effac8-f5e6-446c-b386-c1a1f8d6721a)
+
 
 ## Installation
 
