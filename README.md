@@ -66,9 +66,3 @@ This application requires Node.js, npm, and PowerShell to be installed.
 * **Intune Reporting:** Retrieve a list of all intune applications.
 * ![image](https://github.com/user-attachments/assets/37effac8-f5e6-446c-b386-c1a1f8d6721a)
 
-
-## Installation
-
-1.  **Clone the repository:**
-
->>>>>>> 39a6b8636c135c29724c3a16b4b714abace38b88
